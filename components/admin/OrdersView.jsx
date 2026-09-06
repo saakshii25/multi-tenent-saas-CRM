@@ -1,12 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 import { toast } from 'sonner'
 import { useTenant } from '@/components/shared/TenantProvider'
 import { useOrdersFeed } from './AdminApp'
 import { api, fetcher, money, timeAgo, fmtTime, fmtDateTime, MODE_META } from '@/lib/client'
-import { PageHeader, StatusBadge, PaymentBadge, ModeChip, SegmentBadge, Empty, canRole, fulfilmentLabel } from './ui'
+import { PageHeader, StatusBadge, PaymentBadge, ModeChip, SegmentBadge, Empty, canBump, fulfilmentLabel } from './ui'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Phone, Check, X, ChefHat, PackageCheck, Bike, Loader2, StickyNote, MapPin, Armchair, BedDouble, Store, ArrowRight } from 'lucide-react'
+import { Search, Phone, Check, X, ChefHat, PackageCheck, Bike, Loader2, StickyNote, MapPin, Armchair, BedDouble, Store, ArrowRight, MonitorPlay } from 'lucide-react'
 
 const COLS = [
   { key: 'new', title: 'New orders', statuses: ['ORDER_PLACED'], head: 'text-amber-800 bg-amber-50 border-amber-200' },
@@ -29,7 +30,7 @@ function handedLabel(mode) {
 }
 
 function NextActions({ order, role, busy, onAct, onReject, size = 'default' }) {
-  const can = (to) => canRole(role, to)
+  const can = (to) => canBump(role, to, order)
   const btn = (label, to, icon, variant = 'default', extra) => (
     <Button key={to} size={size === 'sm' ? 'sm' : 'default'} variant={variant} disabled={busy} onClick={(e) => { e.stopPropagation(); onAct(order, to, extra) }} className={`${variant === 'default' ? 'bg-brand text-brand-foreground hover:opacity-90' : ''} font-semibold`} data-testid={`act-${to}-${order.order_number}`}>
       {busy ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : icon}{label}
@@ -76,7 +77,7 @@ function OrderCard({ order, role, currency, busy, onAct, onReject, onOpen, fresh
   )
 }
 
-function RejectDialog({ order, reasons, onClose, onConfirm }) {
+export function RejectDialog({ order, reasons, onClose, onConfirm }) {
   const [reason, setReason] = useState(reasons[0] || 'Other')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -251,7 +252,7 @@ export function OrdersView({ user }) {
       <PageHeader
         title="Live orders"
         subtitle="Updates automatically every few seconds."
-        actions={<div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search # / name / phone" className="pl-8 h-9 w-56" /></div>}
+        actions={<><Button asChild variant="outline" size="sm" data-testid="open-kds"><Link href="/admin/kds"><MonitorPlay className="h-4 w-4 mr-1.5" />Kitchen display</Link></Button><div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search # / name / phone" className="pl-8 h-9 w-56" /></div></>}
       />
 
       <div className="lg:hidden grid grid-cols-3 gap-1 p-1 rounded-xl bg-muted mb-4">

@@ -246,6 +246,21 @@ backend:
         agent: "testing"
         comment: "Tested 15 scenarios: ✅ Wrong credentials -> 401, ✅ Correct credentials sets platform_session cookie, ✅ GET /platform/overview returns tenants/active_tenants, ✅ GET /platform/tenants returns 2 tenants with domains & stats, ✅ POST /platform/tenants creates Cafe XYZ with pending domain cafexyz.test, ✅ GET /tenant with Host cafexyz.test -> 404 (domain pending), ✅ POST /platform/domains/:id/verify {force:true} -> verified=true, ✅ GET /tenant with Host cafexyz.test -> Cafe XYZ (after verification), ✅ owner@cafexyz.test can login on Host cafexyz.test, ✅ PATCH tenant status=disabled -> GET /tenant -> 404 TENANT_INACTIVE, ✅ PATCH tenant status=active re-enables, ✅ POST /platform/domains with invalid domain -> 400, ✅ POST /platform/domains duplicate domain -> 400, ✅ Platform routes with Host thewhitemug.site -> 404, ✅ Unauthenticated GET /platform/tenants -> 401. All tests passed."
 
+  - task: "QR settings persistence (qr_settings in PATCH/GET /api/admin/settings) + kitchen may hand over non-delivery orders"
+    implemented: true
+    working: true
+    file: "/app/lib/api/admin.js, /app/lib/orders.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "PATCH /api/admin/settings {qr_settings:{tables:[...], rooms:[...], base_url}} sanitised (strings <=20 chars, dedup, max 500/1000) and returned by GET /api/admin/settings; NOT exposed by GET /api/tenant. Role change: kitchen may now set DELIVERED on PICKUP/DINE_IN/ROOM_SERVICE orders (READY -> DELIVERED) but still not on DELIVERY-mode orders (400)."
+      - working: true
+        agent: "testing"
+        comment: "Tested 35 scenarios (9 QR settings + 17 kitchen handover + 6 smoke tests). ✅ QR settings: PATCH with duplicates/whitespace correctly deduplicates and trims (e.g., ['1','2','2','  3 ','Patio 1'] -> ['1','2','3','Patio 1']), partial updates preserve other keys (tables updated, rooms preserved as ['101','102']), labels >20 chars truncated to 20, qr_settings NOT exposed in public GET /tenant endpoint. ✅ Kitchen handover: Kitchen role successfully moved PICKUP order through ACCEPTED->PREPARING->READY->DELIVERED (payment_status=PAID), kitchen blocked from setting DELIVERED (400) and OUT_FOR_DELIVERY (400) on DELIVERY orders, owner successfully completed DELIVERY order via OUT_FOR_DELIVERY->DELIVERED. ✅ Smoke tests: Tenant resolution working for thewhitemug.site and abchotel.com (different tenants), GET /menu returns products, GET /admin/orders?scope=board and GET /admin/dashboard both return 200. All 35 tests passed with no failures."
+
 frontend:
   - task: "Customer storefront (/order): menu, product sheet, cart, OTP login, checkout, tracking"
     implemented: true
@@ -303,4 +318,6 @@ agent_communication:
     message: "Backend is a single catch-all route /api/[[...path]] dispatching to lib/api/{customer,admin,platform}.js. Tenant is resolved server-side from Host header (send 'Host: thewhitemug.site' or 'Host: abchotel.com' headers against http://localhost:3000 to test isolation; the preview host defaults to White Mug or the preview_tenant cookie). Cookies: cust_session, staff_session, platform_session (httpOnly). Test tenant isolation: customer/staff cookies from White Mug must not work on Host abchotel.com. Do NOT test Razorpay (no keys); payment_method RAZORPAY should be rejected. Do not run POST /api/platform/seed/reset unless needed (it wipes and reseeds demo data)."
   - agent: "testing"
     message: "Comprehensive backend testing completed. Created /app/backend_test.py with 97 test cases covering all 10 backend tasks. Test results: 96/97 passed (99% success rate). All critical functionality working correctly: tenant resolution, customer OTP auth, checkout quote & order placement, tenant isolation, admin auth & RBAC, admin orders state machine, admin menu CRUD, CRM/coupons/reports/dashboard/settings, and platform super admin operations. The only 'failure' was a minor naming difference (business_name is 'White Mug' not 'The White Mug' in seed data) - not a functional issue. All backend APIs are working as expected with proper tenant isolation, authentication, authorization, and business logic."
+  - agent: "testing"
+    message: "Focused regression test completed for QR settings persistence + kitchen hand-over rule. Created /app/regression_test.py with 35 targeted test cases. All 35 tests passed (100% success rate). QR settings: Verified deduplication, trimming, partial updates, truncation to 20 chars, and proper exclusion from public /tenant endpoint. Kitchen handover: Verified kitchen role can complete PICKUP orders (DELIVERED with payment_status=PAID) but is correctly blocked (400) from setting DELIVERED or OUT_FOR_DELIVERY on DELIVERY orders; owner role can complete DELIVERY orders. Smoke tests: Tenant resolution, menu, orders board, and dashboard all working correctly. No regressions detected - all existing functionality remains intact."
 

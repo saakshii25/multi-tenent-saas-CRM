@@ -27,7 +27,7 @@ export function PreviewBar() {
   }
 
   return (
-    <div className="bg-slate-900 text-slate-200 text-xs">
+    <div className="print:hidden bg-slate-900 text-slate-200 text-xs">
       <div className="mx-auto max-w-6xl px-3 h-9 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />

@@ -5,12 +5,23 @@ import { STATUS_META, MODE_META, SEGMENT_META, PAYMENT_STATUS_META } from '@/lib
 export const ROLE_TRANSITIONS = {
   owner: '*',
   manager: '*',
-  kitchen: ['ACCEPTED', 'REJECTED', 'PREPARING', 'READY'],
+  kitchen: ['ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'DELIVERED'],
   delivery: ['OUT_FOR_DELIVERY', 'DELIVERED'],
 }
 export const canRole = (role, to) => {
   const r = ROLE_TRANSITIONS[role]
   return r === '*' || (Array.isArray(r) && r.includes(to))
+}
+// Mode-aware variant mirroring the server: kitchen may hand over (DELIVERED)
+// pickup / dine-in / room-service orders but never delivery orders; only
+// delivery orders can go OUT_FOR_DELIVERY.
+export const canBump = (role, to, order) => {
+  if (to === 'OUT_FOR_DELIVERY' && order?.mode !== 'DELIVERY') return false
+  if (to === 'DELIVERED') {
+    if (role === 'kitchen') return order?.mode !== 'DELIVERY'
+    return canRole(role, to)
+  }
+  return canRole(role, to)
 }
 export const ROLE_LABEL = { owner: 'Owner', manager: 'Manager', kitchen: 'Kitchen staff', delivery: 'Delivery staff' }
 

@@ -79,3 +79,16 @@
 .new-order-pulse {
   animation: pulse-ring 1.6s ease-out infinite;
 }
+
+@media print {
+  @page {
+    margin: 10mm;
+  }
+  body {
+    background: #fff;
+  }
+  .qr-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

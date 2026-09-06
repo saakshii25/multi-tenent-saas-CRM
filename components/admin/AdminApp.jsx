@@ -17,9 +17,11 @@ import { CustomersView } from './CustomersView'
 import { CouponsView } from './CouponsView'
 import { ReportsView } from './ReportsView'
 import { SettingsView } from './SettingsView'
+import { QrView } from './QrView'
+import { KitchenDisplay } from './KitchenDisplay'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Users, Tag, BarChart3, Settings, ExternalLink, LogOut, Bell, Volume2, VolumeX, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Users, Tag, BarChart3, Settings, ExternalLink, LogOut, Bell, Volume2, VolumeX, ChevronDown, MonitorPlay, QrCode } from 'lucide-react'
 
 // ---------- Live orders feed shared across admin pages ----------
 const FeedCtx = createContext(null)
@@ -66,9 +68,11 @@ function OrdersFeedProvider({ children }) {
 const NAV = [
   { href: '/admin', key: '', label: 'Dashboard', icon: LayoutDashboard, roles: ['owner', 'manager', 'kitchen'] },
   { href: '/admin/orders', key: 'orders', label: 'Live orders', icon: ClipboardList, roles: ['owner', 'manager', 'kitchen', 'delivery'] },
+  { href: '/admin/kds', key: 'kds', label: 'Kitchen display', icon: MonitorPlay, roles: ['owner', 'manager', 'kitchen'] },
   { href: '/admin/menu', key: 'menu', label: 'Menu', icon: UtensilsCrossed, roles: ['owner', 'manager', 'kitchen'] },
   { href: '/admin/customers', key: 'customers', label: 'Customers', icon: Users, roles: ['owner', 'manager', 'kitchen'] },
   { href: '/admin/coupons', key: 'coupons', label: 'Coupons', icon: Tag, roles: ['owner', 'manager'] },
+  { href: '/admin/qr', key: 'qr', label: 'QR codes', icon: QrCode, roles: ['owner', 'manager'] },
   { href: '/admin/reports', key: 'reports', label: 'Reports', icon: BarChart3, roles: ['owner', 'manager'] },
   { href: '/admin/settings', key: 'settings', label: 'Settings', icon: Settings, roles: ['owner', 'manager'] },
 ]
@@ -83,11 +87,14 @@ function Shell({ user, onLogout }) {
 
   let view
   const key = allowed.some((n) => n.key === seg) ? seg : allowed[0].key
+  // Kitchen display is a full-screen surface without the admin chrome.
+  if (key === 'kds') return <KitchenDisplay user={user} />
   if (key === '') view = <DashboardView user={user} />
   else if (key === 'orders') view = <OrdersView user={user} />
   else if (key === 'menu') view = <MenuView user={user} />
   else if (key === 'customers') view = <CustomersView user={user} />
   else if (key === 'coupons') view = <CouponsView user={user} />
+  else if (key === 'qr') view = <QrView user={user} />
   else if (key === 'reports') view = <ReportsView user={user} />
   else if (key === 'settings') view = <SettingsView user={user} />
 
@@ -116,7 +123,7 @@ function Shell({ user, onLogout }) {
     <div className="min-h-screen bg-slate-50">
       <PreviewBar />
       <div className="flex">
-        <aside className="hidden lg:flex w-60 shrink-0 flex-col border-r bg-sidebar sticky top-0 h-screen">
+        <aside className="print:hidden hidden lg:flex w-60 shrink-0 flex-col border-r bg-sidebar sticky top-0 h-screen">
           <div className="h-16 px-4 flex items-center gap-3 border-b">
             <TenantLogo tenant={tenant} size="sm" />
             <div className="min-w-0"><div className="font-bold truncate leading-tight">{tenant.business_name}</div><div className="text-[11px] text-muted-foreground">Merchant admin</div></div>
@@ -128,7 +135,7 @@ function Shell({ user, onLogout }) {
         </aside>
 
         <div className="flex-1 min-w-0">
-          <header className="sticky top-0 z-20 h-14 lg:h-16 border-b bg-white/90 backdrop-blur flex items-center px-4 gap-3">
+          <header className="print:hidden sticky top-0 z-20 h-14 lg:h-16 border-b bg-white/90 backdrop-blur flex items-center px-4 gap-3">
             <div className="lg:hidden flex items-center gap-2 min-w-0"><TenantLogo tenant={tenant} size="sm" /><span className="font-bold truncate">{tenant.business_name}</span></div>
             <div className="hidden lg:block font-semibold">{current?.label}</div>
             <div className="flex-1" />
@@ -153,7 +160,7 @@ function Shell({ user, onLogout }) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel><div className="font-semibold">{user.name}</div><div className="text-xs text-muted-foreground font-normal">{user.email} · {ROLE_LABEL[user.role]}</div></DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {allowed.filter((n) => ['coupons', 'settings', 'reports'].includes(n.key)).map((n) => (
+                {allowed.filter((n) => ['kds', 'coupons', 'qr', 'settings', 'reports'].includes(n.key)).map((n) => (
                   <DropdownMenuItem key={n.key} asChild className="lg:hidden"><Link href={n.href}><n.icon className="h-4 w-4 mr-2" />{n.label}</Link></DropdownMenuItem>
                 ))}
                 <DropdownMenuItem asChild><a href="/order" target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4 mr-2" />Open storefront</a></DropdownMenuItem>
@@ -163,11 +170,11 @@ function Shell({ user, onLogout }) {
             </DropdownMenu>
           </header>
 
-          <main className="p-4 lg:p-6 pb-24 lg:pb-8 max-w-[1400px]">{view}</main>
+          <main className="p-4 lg:p-6 pb-24 lg:pb-8 max-w-[1400px] print:p-0 print:max-w-none">{view}</main>
         </div>
       </div>
 
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-20 border-t bg-white flex safe-bottom">
+      <nav className="print:hidden lg:hidden fixed bottom-0 inset-x-0 z-20 border-t bg-white flex safe-bottom">
         {allowed.filter((n) => ['', 'orders', 'menu', 'customers', 'reports'].includes(n.key)).slice(0, 5).map((n) => <NavLink key={n.key} n={n} mobile />)}
       </nav>
     </div>
